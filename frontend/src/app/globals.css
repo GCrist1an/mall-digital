@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Colores del logo de De Aquí: bg-brand-green, text-brand-cream, etc. */
+@theme {
+  --color-brand-green: #1f4e3d;
+  --color-brand-yellow: #f2b632;
+  --color-brand-cream: #fff4dc;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+
+body {
+  background-color: var(--color-brand-cream);
+  color: var(--color-brand-green);
+}
