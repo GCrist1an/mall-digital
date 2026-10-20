@@ -1,0 +1,120 @@
+# CI del monorepositorio (MD-17): un job por parte, siempre con el mismo nombre
+# para que la protección de main pueda exigir «frontend» y «api».
+# Sin filtros de rutas: un check obligatorio con paths se queda pendiente
+# en los PR que no tocan esa carpeta y bloquea el merge.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  # En PR se cancela la ejecución anterior; en main cada push se valida completo.
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  frontend:
+    name: frontend
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      # Mientras frontend/ no tenga proyecto (MD-14), el job termina en verde con un aviso.
+      - name: Detectar proyecto
+        id: detect
+        run: |
+          if [ -f package.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::frontend/ aún no tiene package.json (MD-14); se omiten las verificaciones."
+            echo "present=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # La versión de pnpm sale de «packageManager» en frontend/package.json.
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        if: steps.detect.outputs.present == 'true'
+        with:
+          package_json_file: frontend/package.json
+
+      - uses: actions/setup-node@v7
+        if: steps.detect.outputs.present == 'true'
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+
+      - name: Instalar dependencias
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm install --frozen-lockfile
+
+      - name: Lint
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm lint
+
+      - name: Formato
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm format:check
+
+      - name: Tipos
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm typecheck
+
+      - name: Pruebas
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm test
+
+      - name: Build
+        if: steps.detect.outputs.present == 'true'
+        run: pnpm build
+
+  api:
+    name: api
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v7
+
+      # Maven o Gradle lo define MD-63; el job detecta cuál hay.
+      # Mientras api/ no tenga proyecto, termina en verde con un aviso.
+      - name: Detectar proyecto
+        id: detect
+        run: |
+          if [ -f pom.xml ]; then
+            echo "tool=maven" >> "$GITHUB_OUTPUT"
+          elif [ -f build.gradle ] || [ -f build.gradle.kts ]; then
+            echo "tool=gradle" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::api/ aún no tiene proyecto Maven ni Gradle (MD-63); se omiten la compilación y las pruebas."
+            echo "tool=none" >> "$GITHUB_OUTPUT"
+          fi
+
+      - uses: actions/setup-java@v6
+        if: steps.detect.outputs.tool != 'none'
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: ${{ steps.detect.outputs.tool }}
+
+      - name: Compilar y probar (Maven)
+        if: steps.detect.outputs.tool == 'maven'
+        run: |
+          if [ -f mvnw ]; then sh ./mvnw -B verify; else mvn -B verify; fi
+
+      - name: Compilar y probar (Gradle)
+        if: steps.detect.outputs.tool == 'gradle'
+        run: |
+          if [ -f gradlew ]; then sh ./gradlew build; else gradle build; fi

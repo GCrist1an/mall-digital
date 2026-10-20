@@ -28,6 +28,7 @@ Se completa cuando existan las bases de cada parte:
 3. Escribe los commits con la clave: `feat(frontend): MD-14 agrega página de inicio`.
 4. Abre el pull request con la clave en el título y mueve la tarea a «En revisión».
 5. El PR necesita CI en verde y la aprobación del revisor asignado por `CODEOWNERS`.
+   El CI (`.github/workflows/ci.yml`) corre los checks `frontend` y `api` en cada PR y en cada push a `main`.
 6. Se fusiona con **squash merge** y la rama se borra.
 
 Más detalle en la sección 18 del Documento Maestro.
