@@ -54,3 +54,17 @@ Los colores del logo están como tokens de Tailwind en `src/app/globals.css`:
 | `brand-cream`  | `#FFF4DC` | `text-brand-cream` |
 
 Fuente: Inter, servida localmente con `next/font`.
+
+## Errores (GlitchTip)
+
+Los errores del navegador y del servidor llegan a GlitchTip con el SDK `@sentry/nextjs` (MD-18), y GlitchTip avisa en Slack #alertas.
+
+- **DSN:** solo en la variable `NEXT_PUBLIC_SENTRY_DSN` de Vercel (Production y Preview). Nunca en el código.
+- **Entorno:** `production`, `preview` o `development`, según `VERCEL_ENV`. En local y en CI no se envían eventos.
+- **Release:** el commit que despliega Vercel (`VERCEL_GIT_COMMIT_SHA`).
+- **Límite gratuito (1.000 eventos al mes):** solo errores; sin transacciones (`tracesSampleRate: 0`) ni sesiones.
+- **Ley 1581:** `sendDefaultPii: false` y sin Session Replay.
+- **Prueba:** en un despliegue de preview, abre `/prueba-errores`. En producción esa ruta responde 404.
+- **Source maps:** aún no se suben; las trazas del navegador llegan minificadas.
+
+La configuración está en `src/lib/observabilidad.ts`, `src/instrumentation.ts` y `src/instrumentation-client.ts`.
