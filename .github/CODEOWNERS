@@ -1,0 +1,17 @@
+# Revisores automáticos de cada PR, según la tabla de revisores
+# del Documento Maestro (sección 18.2). La última regla que coincide gana.
+
+# Por defecto: cualquiera de los dos
+*                               @GCrist1an @Parra9510
+
+# Frontend: lo escribe Cristian, lo revisa Víctor
+/frontend/                      @Parra9510
+
+# API: la escribe Víctor, la revisa Cristian
+/api/                           @GCrist1an
+
+# Migraciones de base de datos: revisa Cristian
+/api/src/main/resources/db/     @GCrist1an
+
+# CI e infraestructura: revisa quien no sea el autor
+/.github/                       @Parra9510 @GCrist1an
