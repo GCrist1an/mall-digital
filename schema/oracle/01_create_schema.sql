@@ -382,3 +382,135 @@ COMMENT ON TABLE favoritos IS 'Lista de deseos y favoritos de los clientes';
 CREATE INDEX idx_favoritos_cliente ON favoritos(id_cliente);
 
 -- @@SPLIT@@
+
+-- =============================================================================
+-- TABLA: PROMOCIONES
+-- Campañas y promociones del mall digital
+-- =============================================================================
+CREATE TABLE promociones (
+    id_promocion          NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo                VARCHAR2(30) NOT NULL UNIQUE,
+    nombre                VARCHAR2(100) NOT NULL,
+    descripcion           VARCHAR2(500),
+    tipo                  VARCHAR2(30) NOT NULL CHECK (tipo EN ('PORCENTAJE', 'MONTO_FIXO', 'ENVIO_GRATIS', 'COMPRA_MINIMA')),
+    valor                 NUMBER(12,2) NOT NULL,
+    fecha_inicio          DATE NOT NULL,
+    fecha_fin             DATE NOT NULL,
+    id_local              NUMBER,
+    id_producto           NUMBER,
+    activo                NUMBER(1) DEFAULT 1 CHECK (activo IN (0, 1)),
+    uso_maximo_por_cliente  NUMBER DEFAULT NULL,
+    uso_actual            NUMBER DEFAULT 0,
+    condiciones         CLOB,
+    fecha_creacion        TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion   TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    creado_por            VARCHAR2(100) DEFAULT USER,
+    actualizado_por       VARCHAR2(100),
+    
+    CONSTRAINT fk_promociones_local FOREIGN KEY (id_local) REFERENCES locales(id_local),
+    CONSTRAINT fk_promociones_producto FOREIGN KEY (id_producto) REFERENCES productos(id_producto)
+);
+
+COMMENT ON TABLE promociones IS 'Campañas y promociones del mall digital';
+COMMENT ON COLUMN promociones.codigo IS 'Código único para aplicar la promoción';
+COMMENT ON COLUMN promociones.tipo IS 'Tipo de promoción: PORCENTAJE, MONTO_FIXO, ENVIO_GRATIS, COMPRA_MINIMA';
+COMMENT ON COLUMN promociones.valor IS 'Valor del descuento o beneficio';
+COMMENT ON COLUMN promociones.uso_actual IS 'Veces que ya fue usada la promoción';
+
+CREATE INDEX idx_promociones_activo ON promociones(activo);
+CREATE INDEX idx_promociones_fecha ON promociones(fecha_inicio, fecha_fin);
+CREATE INDEX idx_promociones_codigo ON promociones(codigo);
+
+-- =============================================================================
+-- TABLA: CUONES
+-- Cupones de descuento para clientes
+-- =============================================================================
+CREATE TABLE cupones (
+    id_cupon            NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    codigo              VARCHAR2(30) NOT NULL UNIQUE,
+    id_promocion        NUMBER NOT NULL,
+    id_cliente          NUMBER,
+    fecha_emision       DATE DEFAULT CURRENT_DATE NOT NULL,
+    fecha_expiracion    DATE NOT NULL,
+    uso_maximo          NUMBER DEFAULT 1,
+    uso_actual          NUMBER DEFAULT 0,
+    estado              VARCHAR2(20) DEFAULT 'ACTIVO' CHECK (estado IN ('ACTIVO', 'EXPIRADO', 'USADO', 'CANCELADO')),
+    monto_descuento     NUMBER(12,2),
+    porcentaje_descuento NUMBER(5,2),
+    min_compra          NUMBER(12,2) DEFAULT 0 CHECK (min_compra >= 0),
+    activa              NUMBER(1) DEFAULT 1 CHECK (activa IN (0, 1)),
+    fecha_creacion      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    creado_por          VARCHAR2(100) DEFAULT USER,
+    actualizado_por     VARCHAR2(100),
+    
+    CONSTRAINT fk_cupones_promocion FOREIGN KEY (id_promocion) REFERENCES promociones(id_promocion),
+    CONSTRAINT fk_cupones_cliente FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente)
+);
+
+COMMENT ON TABLE cupones IS 'Cupones de descuento para clientes del mall digital';
+COMMENT ON COLUMN cupones.codigo IS 'Código del canjeado por el cliente';
+COMMENT ON COLUMN cupones.estado IS 'Estado actual del cupón';
+COMMENT ON COLUMN cupones.uso_actual IS 'Veces que ya fue usado el cupón';
+
+CREATE INDEX idx_cupones_codigo ON cupones(codigo);
+CREATE INDEX idx_cupones_promocion ON cupones(id_promocion);
+CREATE INDEX idx_cupones_estado ON cupones(estado);
+CREATE INDEX idx_cupones_expiracion ON cupones(fecha_expiracion);
+
+-- =============================================================================
+-- TABLA: CONFIGURACION
+-- Configuraciones y ajustes del sistema
+-- =============================================================================
+CREATE TABLE configuracion (
+    id_configuracion      NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    clave                 VARCHAR2(100) NOT NULL UNIQUE,
+    valor               CLOB NOT NULL,
+    tipo_dato           VARCHAR2(30) NOT NULL DEFAULT 'STRING' CHECK (tipo_dato IN ('STRING', 'NUMBER', 'BOOLEAN', 'DATE', 'JSON')),
+    descripcion           VARCHAR2(500),
+    id_modulo           VARCHAR2(50) NOT NULL,
+    activo              NUMBER(1) DEFAULT 1 CHECK (activo IN (0, 1)),
+    fecha_creacion      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    fecha_actualizacion TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    creado_por          VARCHAR2(100) DEFAULT USER,
+    actualizado_por     VARCHAR2(100),
+    
+    CONSTRAINT uk_configuracion_clave_modulo UNIQUE (clave, id_modulo)
+);
+
+COMMENT ON TABLE configuracion IS 'Configuraciones y ajustes del sistema del mall digital';
+COMMENT ON COLUMN configuracion.clave IS 'Clave única de la configuración';
+COMMENT ON COLUMN configuracion.tipo_dato IS 'Tipo de dato: STRING, NUMBER, BOOLEAN, DATE, JSON';
+COMMENT ON COLUMN configuracion.id_modulo IS 'Módulo al que pertenece la configuración';
+
+CREATE INDEX idx_configuracion_clave ON configuracion(clave);
+CREATE INDEX idx_configuracion_modulo ON configuracion(id_modulo);
+CREATE INDEX idx_configuracion_activo ON configuracion(activo);
+
+-- =============================================================================
+-- TABLA: AJUSTES_INVENTARIO
+-- Ajustes de inventario y stock
+-- =============================================================================
+CREATE TABLE ajustes_inventario (
+    id_ajuste           NUMBER GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    id_producto         NUMBER NOT NULL,
+    tipo_ajuste         VARCHAR2(30) NOT NULL CHECK (tipo_ajuste EN ('ENTRADA', 'SALIDA', 'AJUSTE', 'INVENTARIO_FISICO')),
+    cantidad            NUMBER NOT NULL CHECK (cantidad != 0),
+    motivo              VARCHAR2(200) NOT NULL,
+    fecha_ajuste        DATE DEFAULT CURRENT_DATE NOT NULL,
+    id_local            NUMBER,
+    id_usuario          VARCHAR2(100) DEFAULT USER,
+    activo              NUMBER(1) DEFAULT 1 CHECK (activo IN (0, 1)),
+    fecha_creacion      TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_ajustes_producto FOREIGN KEY (id_producto) REFERENCES productos(id_producto),
+    CONSTRAINT fk_ajustes_local FOREIGN KEY (id_local) REFERENCES locales(id_local)
+);
+
+COMMENT ON TABLE ajustes_inventario IS 'Historial de ajustes de inventario y stock';
+COMMENT ON COLUMN ajustes_inventario.tipo_ajuste IS 'Tipo: ENTRADA, SALIDA, AJUSTE, INVENTARIO_FISICO';
+COMMENT ON COLUMN ajustes_inventario.cantidad IS 'Cantidad positiva para ENTRADA, negativa para SALIDA';
+
+CREATE INDEX idx_ajustes_producto ON ajustes_inventario(id_producto);
+CREATE INDEX idx_ajustes_local ON ajustes_inventario(id_local);
+CREATE INDEX idx_ajustes_fecha ON ajustes_inventario(fecha_ajuste);
