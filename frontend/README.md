@@ -63,7 +63,9 @@ Los errores del navegador y del servidor llegan a GlitchTip con el SDK `@sentry/
 - **Entorno:** `production`, `preview` o `development`, según `VERCEL_ENV`. En local y en CI no se envían eventos.
 - **Release:** el commit que despliega Vercel (`VERCEL_GIT_COMMIT_SHA`).
 - **Límite gratuito (1.000 eventos al mes):** solo errores; sin transacciones (`tracesSampleRate: 0`) ni sesiones.
-- **Ley 1581:** `sendDefaultPii: false` y sin Session Replay.
+- **Ley 1581:** sin Session Replay y con `dataCollection` al mínimo: sin datos del usuario, cookies, cuerpos, consultas de URL ni variables locales; de las cabeceras solo `user-agent`. En el SDK 11, `sendDefaultPii` ya no existe.
+- **URLs:** la petición y los breadcrumbs llegan sin `?…` ni `#…`.
+- **IP del visitante:** GlitchTip guarda la IP de la conexión que le entrega el evento. Por eso el navegador envía sus eventos al túnel `/monitoreo`, y Vercel los reenvía sin las cabeceras del visitante; GlitchTip solo ve la IP del servidor.
 - **Prueba:** en un despliegue de preview, abre `/prueba-errores`. En producción esa ruta responde 404.
 - **Source maps:** aún no se suben; las trazas del navegador llegan minificadas.
 
