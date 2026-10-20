@@ -1,22 +1,30 @@
 # =============================================================================
-# Jira MD-15: Crear bases Oracle Autonomous DB (dev y prod) y aplicar esquema inicial
+# Jira MD-15: Bases Oracle Autonomous Database (dev y prod) para «De Aquí»
 # Entorno: PRODUCCIÓN (prod)
-# Archivo: main.tf - Configuración de base de datos Oracle Autonomous DB para producción
+# -----------------------------------------------------------------------------
+# COSTO $0: la base se crea SIEMPRE en Always Free (1 OCPU, 20 GB, sin escalar).
+# `is_free_tier = true` es fijo a propósito (no es una variable): quitarlo la
+# convertiría en un recurso de pago. No se declaran cpu_core_count, compute_count,
+# data_storage_size_*, license_model ni subnet_id (endpoint privado): ninguno
+# existe en Always Free y varios generan cobros.
+# Límite de la cuenta: 2 bases Always Free por tenancy (dev + prod = las 2) y
+# deben crearse en la región HOME del tenancy.
+# Antes de aplicar: terraform plan, y confirma que muestre is_free_tier = true.
 # =============================================================================
 
 terraform {
   required_version = ">= 1.5.0"
-  
+
   required_providers {
     oci = {
-      source  = "hashicorp/oci"
-      version = "~> 6.0"
+      source  = "oracle/oci"
+      version = ">= 6.0.0"
     }
   }
-  
-  backend "local" {
-    path = "c:/Users/LENOVO/Desktop/Mall digital/infra/terraform/oracle/prod/terraform.tfstate"
-  }
+
+  # Estado local relativo a esta carpeta (terraform.tfstate está en .gitignore).
+  # Contiene la contraseña de admin: nunca se sube al repositorio.
+  backend "local" {}
 }
 
 provider "oci" {
@@ -38,30 +46,35 @@ variable "user_ocid" {
 }
 
 variable "fingerprint" {
-  description = "Huella dactilar de la clave pública API de OCI"
+  description = "Huella de la clave pública de API de OCI"
   type        = string
 }
 
 variable "private_key_path" {
-  description = "Ruta a la llave privada de la API de OCI"
+  description = "Ruta a la llave privada de API de OCI (fuera del repositorio)"
   type        = string
 }
 
 variable "region" {
-  description = "Región de OCI"
+  description = "Región HOME del tenancy (Always Free solo se crea allí)"
   type        = string
   default     = "us-ashburn-1"
 }
 
 variable "compartment_ocid" {
-  description = "OCID del compartimento donde se creará la base de datos"
+  description = "OCID del compartimento donde se crea la base de datos"
   type        = string
 }
 
 variable "db_name" {
-  description = "Nombre de la base de datos (máximo 14 caracteres alfanuméricos)"
+  description = "Nombre de la base: empieza con letra, solo alfanumérico, máx. 30 caracteres"
   type        = string
-  default     = "mall_prod"
+  default     = "mallprod"
+
+  validation {
+    condition     = can(regex("^[A-Za-z][A-Za-z0-9]{0,29}$", var.db_name))
+    error_message = "db_name debe empezar con letra y ser solo alfanumérico (sin guion bajo), máx. 30."
+  }
 }
 
 variable "db_display_name" {
@@ -71,110 +84,86 @@ variable "db_display_name" {
 }
 
 variable "db_password" {
-  description = "Contraseña de administrador de la base de datos"
+  description = "Contraseña de ADMIN: 12-30 caracteres, con mayúscula, minúscula y número, sin comillas dobles"
   type        = string
   sensitive   = true
+
+  validation {
+    condition = (
+      length(var.db_password) >= 12 && length(var.db_password) <= 30 &&
+      can(regex("[A-Z]", var.db_password)) &&
+      can(regex("[a-z]", var.db_password)) &&
+      can(regex("[0-9]", var.db_password)) &&
+      !can(regex("\"", var.db_password))
+    )
+    error_message = "La contraseña debe tener 12-30 caracteres, mayúscula, minúscula, número y sin comillas dobles."
+  }
 }
 
-variable "cpu_core_count" {
-  description = "Número de núcleos de CPU OCPU"
-  type        = number
-  default     = 4
+variable "db_version" {
+  description = "Versión de la base. Misma en dev y prod (23ai deja de ser válida en dic-2026)."
+  type        = string
+  default     = "19c"
 }
 
-variable "storage_tb" {
-  description = "Almacenamiento en TB"
-  type        = number
-  default     = 2
+variable "allowed_ips" {
+  description = "IPs/CIDR con acceso a la base (ACL). Vacío = acceso público protegido solo por mTLS/wallet."
+  type        = list(string)
+  default     = []
 }
 
-# Subred para la base de datos Autónoma
-data "oci_core_vcn" "vcn_prod" {
-  compartment_id = var.compartment_ocid
-  display_name   = "mall-prod-vcn"
-}
-
-data "oci_core_subnet" "subnet_prod" {
-  compartment_id = var.compartment_ocid
-  vcn_id         = data.oci_core_vcn.vcn_prod.id
-  display_name   = "mall-prod-subnet"
-}
-
-# Base de datos Oracle Autonomous - Producción
+# Base de datos Oracle Autonomous - PRODUCCIÓN (Always Free)
 resource "oci_database_autonomous_database" "mall_prod_adb" {
-  compartment_id        = var.compartment_ocid
-  display_name          = var.db_display_name
-  db_name               = var.db_name
-  admin_password        = var.db_password
-  cpu_core_count        = var.cpu_core_count
-  data_storage_size_tb  = var.storage_tb
-  is_free_tier          = false
-  license_model         = "BRING_YOUR_OWN_LICENSE"
-  workload_type         = "OLTP"
-  db_version            = "23ai"
-  db_workload           = "OLTP"
-  is_dedicated          = false
-  subnet_id             = data.oci_core_subnet.subnet_prod.id
-  nsg_ids               = []
-  
-  # Configuración de backup automático - retención extendida en producción
-  backup_config {
-    automatic_backup_enabled         = true
-    backup_retention_period_in_days  = 30
-    recovery_window_period_in_days   = 7
-    is_recovery_window_abovew_days   = false
-  }
-  
-  # Configuración de mantenimiento
-  maintenance_window_details {
-    day_of_week  = "SUNDAY"
-    time        = "06:00"
-    auto_tune    = false
-    is_replica  = false
-  }
-  
-  # Tags para identificación del entorno
+  compartment_id = var.compartment_ocid
+  display_name   = var.db_display_name
+  db_name        = var.db_name
+  admin_password = var.db_password
+
+  # Always Free: 1 OCPU y 20 GB fijos. Fijo en true: ver nota de costos arriba.
+  is_free_tier = true
+
+  db_version   = var.db_version
+  db_workload  = "OLTP"
+  is_dedicated = false
+
+  # Sin autoescalado (en Always Free no aplica; se deja explícito).
+  is_auto_scaling_enabled             = false
+  is_auto_scaling_for_storage_enabled = false
+
+  # Acceso por wallet (mTLS) y, opcionalmente, lista de IPs permitidas.
+  is_mtls_connection_required = true
+  whitelisted_ips             = length(var.allowed_ips) > 0 ? var.allowed_ips : null
+
   freeform_tags = {
     Environment = "production"
     Project     = "MallDigital"
     ManagedBy   = "Terraform"
     JiraTicket  = "MD-15"
-    Criticality = "High"
   }
-  
-  defined_tags = {
-    Operations = {
-      CostCenter = "IT-Prod"
-    }
+
+  lifecycle {
+    prevent_destroy = true # protege los datos de producción
   }
-  
-  lifecycle_state = "AVAILABLE"
 }
 
 # Outputs
 output "autonomous_database_id" {
-  description = "OCID de la base de datos Autónoma de producción"
+  description = "OCID de la base de datos"
   value       = oci_database_autonomous_database.mall_prod_adb.id
 }
 
 output "autonomous_database_display_name" {
-  description = "Nombre para mostrar de la base de datos de producción"
+  description = "Nombre para mostrar de la base de datos"
   value       = oci_database_autonomous_database.mall_prod_adb.display_name
 }
 
-output "autonomous_database_connection_string" {
-  description = "Cadena de conexión para la base de datos de producción"
-  value       = oci_database_autonomous_database.mall_prod_adb.connection_strings.all_connection_strings["HIGH"]
-  sensitive   = true
-}
-
-output "autonomous_database_private_endpoint" {
-  description = "Endpoint privado de la base de datos de producción"
-  value       = oci_database_autonomous_database.mall_prod_adb.private_endpoint
-  sensitive   = true
-}
-
 output "autonomous_database_db_name" {
-  description = "Nombre de la base de datos de producción"
+  description = "Nombre de la base de datos"
   value       = oci_database_autonomous_database.mall_prod_adb.db_name
+}
+
+output "autonomous_database_connection_string" {
+  description = "Cadena de conexión (servicio HIGH). Requiere el wallet de la base."
+  value       = oci_database_autonomous_database.mall_prod_adb.connection_strings[0].all_connection_strings["HIGH"]
+  sensitive   = true
 }

@@ -1,0 +1,51 @@
+# =============================================================================
+# De Aquí API - configuración base (MD-15)
+# Nada sensible va aquí: URL, usuario y contraseña llegan por variables de entorno.
+#
+#   DB_URL       jdbc:oracle:thin:@malldev_high?TNS_ADMIN=C:/ruta/al/wallet
+#                (malldev = db_name; _high = servicio; TNS_ADMIN = carpeta del wallet
+#                descomprimido, fuera del repositorio)
+#   DB_USER      usuario de la aplicación (no uses ADMIN en la API)
+#   DB_PASSWORD  contraseña de ese usuario
+#   SPRING_PROFILES_ACTIVE   dev | prod
+# =============================================================================
+spring:
+  application:
+    name: de-aqui-api
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+    driver-class-name: oracle.jdbc.OracleDriver
+    hikari:
+      # Always Free admite máx. 20 sesiones simultáneas: pool pequeño.
+      maximum-pool-size: 5
+      minimum-idle: 1
+      connection-timeout: 20000
+      connection-init-sql: "ALTER SESSION SET TIME_ZONE = 'America/Bogota'"
+
+  jpa:
+    open-in-view: false
+    hibernate:
+      # El esquema lo gestionan las migraciones SQL (db/), nunca Hibernate.
+      ddl-auto: none
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: America/Bogota
+
+  jackson:
+    time-zone: America/Bogota
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+server:
+  port: ${PORT:8080}

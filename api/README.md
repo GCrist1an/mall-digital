@@ -1,8 +1,22 @@
 # API · De Aquí
 
-API principal en Java con Spring Boot, desplegada en Oracle Cloud y conectada a Oracle Autonomous Database.
+API principal en Java 21 con Spring Boot 3.2 y Maven, conectada a Oracle Autonomous Database.
 
-Se inicializa en la tarea **MD-63** (Víctor). Hasta entonces esta carpeta está vacía.
-Las migraciones de base de datos irán en `src/main/resources/db/` (MD-15).
+## Ejecutar en local
+```powershell
+$env:DB_URL      = "jdbc:oracle:thin:@malldev_high?TNS_ADMIN=C:/ruta/al/wallet"
+$env:DB_USER     = "usuario_app"
+$env:DB_PASSWORD = "..."
+.\mvnw.cmd spring-boot:run
+```
+Sin esas variables la API no arranca (la configuración está en `src/main/resources/application.yml`).
 
-El CI (MD-17) compila y prueba con Java 21 (Temurin) y detecta solo si el proyecto usa Maven (`pom.xml`) o Gradle (`build.gradle` / `build.gradle.kts`). Mientras no haya proyecto, el job `api` termina en verde con un aviso.
+## Compilar y probar
+```powershell
+.\mvnw.cmd -B verify
+```
+
+## Base de datos
+Las migraciones están en `src/main/resources/db/` (ver su README). Hibernate no toca el esquema (`ddl-auto: none`).
+
+El CI (MD-17) compila y prueba con Java 21 (Temurin) y detecta Maven por `pom.xml`.
