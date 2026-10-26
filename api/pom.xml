@@ -23,6 +23,9 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <!-- Spring Boot 3.2.5 trae Flyway 9.x, que no incluye flyway-database-oracle.
+             Se fija la serie 10.x para ambos artefactos (MD-15). -->
+        <flyway.version>10.20.1</flyway.version>
     </properties>
 
     <dependencies>
@@ -51,6 +54,19 @@
             <groupId>com.oracle.database.jdbc</groupId>
             <artifactId>ojdbc11</artifactId>
             <version>23.4.0.24.05</version>
+        </dependency>
+
+        <!-- Flyway: migraciones de base de datos (db/migration).
+             flyway-database-oracle es el soporte de Oracle desde Flyway 10. -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+            <version>${flyway.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-oracle</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
 
         <!-- HikariCP (included in spring-boot-starter-data-jpa) -->

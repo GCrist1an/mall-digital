@@ -1,12 +1,20 @@
 # =============================================================================
 # De Aquí API - configuración base (MD-15)
-# Nada sensible va aquí: URL, usuario y contraseña llegan por variables de entorno.
+# Nada sensible va aquí: URL, usuarios y contraseñas llegan por variables de entorno.
 #
-#   DB_URL       jdbc:oracle:thin:@malldev_high?TNS_ADMIN=C:/ruta/al/wallet
-#                (malldev = db_name; _high = servicio; TNS_ADMIN = carpeta del wallet
-#                descomprimido, fuera del repositorio)
-#   DB_USER      usuario de la aplicación (no uses ADMIN en la API)
-#   DB_PASSWORD  contraseña de ese usuario
+# Dos usuarios de base de datos (ver db/README.md):
+#   DEAQUI      dueño de las tablas. SOLO lo usa Flyway para migrar.
+#   DEAQUI_APP  usuario de la API: SELECT/INSERT/UPDATE/DELETE, sin permisos de DDL.
+#
+# Variables de entorno
+#   DB_URL            jdbc:oracle:thin:@deaquidev_tp?TNS_ADMIN=C:/ruta/al/wallet
+#                     (alias del tnsnames.ora del wallet; en dev es deaquidev_tp)
+#   DB_USER           DEAQUI_APP
+#   DB_PASSWORD       contraseña de DEAQUI_APP
+#   DB_SCHEMA         esquema dueño de las tablas (por defecto DEAQUI)
+#   FLYWAY_ENABLED    true solo cuando se quiera migrar al arrancar (por defecto false)
+#   FLYWAY_USER       DEAQUI (solo si FLYWAY_ENABLED=true)
+#   FLYWAY_PASSWORD   contraseña de DEAQUI (solo si FLYWAY_ENABLED=true)
 #   SPRING_PROFILES_ACTIVE   dev | prod
 # =============================================================================
 spring:
@@ -25,13 +33,27 @@ spring:
       connection-timeout: 20000
       connection-init-sql: "ALTER SESSION SET TIME_ZONE = 'America/Bogota'"
 
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    # Flyway usa al dueño del esquema (no al usuario de la API).
+    url: ${DB_URL}
+    user: ${FLYWAY_USER:}
+    password: ${FLYWAY_PASSWORD:}
+    # Solo db/migration. db/rollback y db/setup quedan fuera a propósito.
+    locations: classpath:db/migration
+    validate-on-migrate: true
+    baseline-on-migrate: false
+    out-of-order: false
+
   jpa:
     open-in-view: false
     hibernate:
-      # El esquema lo gestionan las migraciones SQL (db/), nunca Hibernate.
+      # El esquema lo gestionan las migraciones SQL (db/migration), nunca Hibernate.
       ddl-auto: none
     properties:
       hibernate:
+        # DEAQUI_APP no es dueño de las tablas: se califican con el esquema dueño.
+        default_schema: ${DB_SCHEMA:DEAQUI}
         jdbc:
           time_zone: America/Bogota
 
