@@ -7,11 +7,11 @@
 # Frontend: lo escribe Cristian, lo revisa Víctor
 /frontend/                      @Parra9510
 
-# API: la escribe Víctor, la revisa Cristian
-/api/                           @GCrist1an
+# API: revisan los dos (MD-78)
+/api/                           @GCrist1an @Parra9510
 
-# Migraciones de base de datos: revisa Cristian
-/api/src/main/resources/db/     @GCrist1an
+# Migraciones de base de datos: revisan los dos (MD-78)
+/api/src/main/resources/db/     @GCrist1an @Parra9510
 
 # CI e infraestructura: revisa quien no sea el autor
 /.github/                       @Parra9510 @GCrist1an
