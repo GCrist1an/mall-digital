@@ -27,7 +27,7 @@ spring:
     password: ${DB_PASSWORD}
     driver-class-name: oracle.jdbc.OracleDriver
     hikari:
-      # Always Free admite máx. 20 sesiones simultáneas: pool pequeño.
+      # Always Free admite máx. 30 sesiones simultáneas (docs de Oracle): pool pequeño.
       maximum-pool-size: 5
       minimum-idle: 1
       connection-timeout: 20000
