@@ -36,3 +36,18 @@ hs_err_pid*
 !.vscode/extensions.json
 .DS_Store
 Thumbs.db
+
+# --- Terraform / OCI (el estado y las variables contienen secretos) ---
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+# .terraform.lock.hcl SÍ se sube (fija las versiones del provider)
+
+# --- Archivos temporales locales ---
+.tmp/
