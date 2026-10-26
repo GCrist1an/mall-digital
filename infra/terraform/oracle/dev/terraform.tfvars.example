@@ -3,7 +3,7 @@ tenancy_ocid     = "ocid1.tenancy.oc1..REEMPLAZAR"
 user_ocid        = "ocid1.user.oc1..REEMPLAZAR"
 fingerprint      = "aa:bb:cc:dd:ee:ff:00:11:22:33:44:55:66:77:88:99"
 private_key_path = "C:/Users/TU_USUARIO/.oci/oci_api_key.pem"
-region           = "us-ashburn-1" # tu región HOME
+region           = "sa-bogota-1" # región HOME (Bogotá)
 compartment_ocid = "ocid1.compartment.oc1..REEMPLAZAR"
 
 # La contraseña NO va aquí: pásala por variable de entorno

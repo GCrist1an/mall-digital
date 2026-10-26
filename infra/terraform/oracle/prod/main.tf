@@ -58,7 +58,7 @@ variable "private_key_path" {
 variable "region" {
   description = "Región HOME del tenancy (Always Free solo se crea allí)"
   type        = string
-  default     = "us-ashburn-1"
+  default     = "sa-bogota-1"
 }
 
 variable "compartment_ocid" {
@@ -69,7 +69,7 @@ variable "compartment_ocid" {
 variable "db_name" {
   description = "Nombre de la base: empieza con letra, solo alfanumérico, máx. 30 caracteres"
   type        = string
-  default     = "mallprod"
+  default     = "deaquiprod"
 
   validation {
     condition     = can(regex("^[A-Za-z][A-Za-z0-9]{0,29}$", var.db_name))
@@ -80,7 +80,7 @@ variable "db_name" {
 variable "db_display_name" {
   description = "Nombre para mostrar de la base de datos"
   type        = string
-  default     = "Mall Digital - Produccion"
+  default     = "deaqui-prod"
 }
 
 variable "db_password" {
