@@ -7,12 +7,11 @@ Scripts para Oracle Autonomous Database. Revisan: @GCrist1an y @Parra9510 (ver C
 db/
 ├── migration/   ← lo único que Flyway ejecuta (ruta por defecto de Spring Boot)
 │   └── V1__md15_esquema_base_oracle.sql   (20 tablas en COP, sin pagos)
-├── rollback/    ← scripts destructivos, FUERA de la ruta de Flyway
-│   └── V1__md15_esquema_base_oracle_rollback.sql
 └── setup/       ← preparación manual de usuarios, FUERA de la ruta de Flyway
     ├── 01_crear_usuario_app.sql
     └── 02_otorgar_permisos_app.sql
 ```
+El rollback (destructivo) está fuera de resources, en api/db-rollback/.
 Flyway solo mira `classpath:db/migration` (ver `application.yml`). Nunca pongas rollback ni scripts de
 setup dentro de `migration/`: Flyway los tomaría como migraciones.
 
@@ -50,6 +49,6 @@ separado (CLI o CI) y dejar `FLYWAY_ENABLED=false` en la API, para que ella nunc
 - Tiendas con verificación, carrito y pedidos, servicios con agenda (piloto), feed y métricas.
 
 ## Rollback (destructivo)
-`rollback/V1__md15_esquema_base_oracle_rollback.sql` borra todas las tablas. Solo en dev, o en prod con
+`api/db-rollback/V1__md15_esquema_base_oracle_rollback.sql` borra todas las tablas. Solo en dev, o en prod con
 respaldo y aprobación del equipo. Si Flyway ya migró, borra también su tabla `flyway_schema_history`
 o usa `flyway clean` en dev, para evitar un estado inconsistente.

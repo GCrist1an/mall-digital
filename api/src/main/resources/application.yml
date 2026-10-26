@@ -39,7 +39,7 @@ spring:
     url: ${DB_URL}
     user: ${FLYWAY_USER:}
     password: ${FLYWAY_PASSWORD:}
-    # Solo db/migration. db/rollback y db/setup quedan fuera a propósito.
+    # Solo db/migration. api/db-rollback/ y db/setup quedan fuera a propósito.
     locations: classpath:db/migration
     validate-on-migrate: true
     baseline-on-migrate: false
