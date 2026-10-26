@@ -1,6 +1,6 @@
 # Migraciones de base de datos · MD-15
 
-Scripts para Oracle Autonomous Database. Revisa: @GCrist1an (ver CODEOWNERS).
+Scripts para Oracle Autonomous Database. Revisan: @GCrist1an y @Parra9510 (ver CODEOWNERS).
 
 ## Estructura
 ```
@@ -31,7 +31,7 @@ setup dentro de `migration/`: Flyway los tomaría como migraciones.
 La API **no** usa `DEAQUI`: si hubiera una falla o una inyección SQL, `DEAQUI_APP` no puede borrar ni alterar tablas.
 
 Crear el usuario (como `ADMIN`, una vez por base):
-1. `setup/01_crear_usuario_app.sql` (cambia la contraseña de ejemplo).
+1. `setup/01_crear_usuario_app.sql` con SQLcl: pide la contraseña de `DEAQUI_APP` al ejecutarlo (no se escribe en el archivo).
 2. `setup/02_otorgar_permisos_app.sql`. Repítelo tras cada migración que cree tablas.
 
 ## Cómo migrar con Flyway desde la API
