@@ -1,6 +1,6 @@
 # Migraciones de base de datos · MD-15
 
-Scripts para Oracle Autonomous Database. Revisa: @GCrist1an (ver CODEOWNERS).
+Scripts para Oracle Autonomous Database. Revisan: @GCrist1an y @Parra9510 (ver CODEOWNERS).
 
 ## Estructura
 ```
